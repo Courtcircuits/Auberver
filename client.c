@@ -5,9 +5,11 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
 
 
 int main(){
+    struct hostent* SERV;
 
     char* serv_addr = "127.0.0.1";
     int port = 12345;
@@ -17,18 +19,27 @@ int main(){
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
     struct sockaddr_in distant;
+
+    bzero(&distant, sizeof(distant));
+
     distant.sin_family = AF_INET;
     distant.sin_port = htons(port);
 
-    distant.sin_addr.s_addr = (in_addr_t *)gethostbyname(serv_addr);
+    SERV = gethostbyname(serv_addr);
+
+    bcopy(SERV, &distant.sin_addr.s_addr, SERV->h_length);
+
+    
 
     char* message= "Hello World!";
 
-    sendto(sockfd, message, lg, 0, &distant, sizeof(distant));
+    socklen_t len = sizeof(distant);
+
+    sendto(sockfd, message, lg, 0, (struct sockaddr *)&distant, len);
 
     char* response = malloc(sizeof(char)*1024);
 
-    recvfrom(sockfd, response, lg,0, &distant, sizeof(distant));
+    recvfrom(sockfd, response, lg,0, (struct sockaddr *)&distant, &len);
     close(sockfd);
     free(response);
 }
